@@ -7,21 +7,27 @@ import os
 import sys
 from PIL import Image
 
-chunk = 1024  # Record in chunks of 1024 samples
-sample_format = pyaudio.paInt16  # 16 bits per sample
-channels = 1
-fs = 44100  # Record at 44100 samples per second
-seconds = 2
 
-p = pyaudio.PyAudio()  # Create an interface to PortAudio
+# Takes a long sample wav file and cuts it up into two second piece chunks
+# Returns all those recordings as frames in a list
+def extract_negative_samples(p, sample_file): 
 
-def extract_samples(sample_file, dest_file): 
-    wf = wave.open(sample_file, 'rb')
-    stream_out = p.open(format =
+    chunk = 1024  # Record in chunks of 1024 samples
+    sample_format = pyaudio.paInt16  # 16 bits per sample
+    channels = 1
+    fs = 44100  # Record at 44100 samples per second
+    seconds = 2
+
+    try: 
+        wf = wave.open(sample_file, 'rb')
+        stream_out = p.open(format =
                     p.get_format_from_width(wf.getsampwidth()),
                     channels = wf.getnchannels(),
                     rate = wf.getframerate(),
                     output = True)
+    except: 
+        print("Failed to read " + sample_file)
+        return []
 
     recordings = []
 
@@ -48,6 +54,9 @@ def extract_samples(sample_file, dest_file):
 
     stream_out.close()
 
+    return recordings 
+
+def convert_samples(recordings, dest_file): 
     offset = 0
     for rec in recordings: 
         plt.clf()
@@ -64,18 +73,22 @@ def extract_samples(sample_file, dest_file):
         img.save(dest_file + "-" + str(offset) + ".png")
         offset += 1
 
-files = os.listdir("negatives-raw")
-num = 0
-for sample in files: 
-    num += 1
-    dest = "negatives/sample-" + str(num)
-    try: 
-        extract_samples("negatives-raw/" + sample, dest)
-    except: 
-        print("Caught error when processing: " + sample)
-    print("\rWrote " + dest, end="")
+if __name__ == "__main__": 
+    p = pyaudio.PyAudio()  # Create an interface to PortAudio
+
+    files = os.listdir("negatives-raw")
+    num = 0
+    for sample in files: 
+        num += 1
+        dest = "negatives/sample-" + str(num)
+        try: 
+            recordings = extract_negative_samples(p, "negatives-raw/" + sample)
+            convert_samples(recordings, dest)
+        except: 
+            print("Caught error when processing: " + sample)
+        print("\rWrote " + dest, end="")
 
 
 
-p.terminate()
+    p.terminate()
 

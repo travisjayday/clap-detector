@@ -17,8 +17,8 @@ validating_ratio = 0.14  # use 15% for validation
 
 #455, 373
 
-img_width = 455 // 3
-img_height = 373 // 3
+img_width = 455 // 2
+img_height = 373 // 2
 
 positives = []
 negatives = []
@@ -87,10 +87,10 @@ print(model.summary())
 if len(sys.argv) == 1: 
     cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoints_path,
                                                      save_weights_only=True,
-                                                     verbose=1)
-
-    history = model.fit(train_images, train_labels, epochs=8, 
-                        validation_data=(val_images, val_labels), callbacks=[cp_callback])
+                                                     period=11,
+                                                     verbose=1) 
+    history = model.fit(train_images, train_labels, epochs=11, 
+                        validation_data=(val_images, val_labels), callbacks=[cp_callback])#, class_weight={0: 0.5})
 
     test_loss, test_acc = model.evaluate(test_images,  test_labels, verbose=2)
 else: 
