@@ -2,7 +2,10 @@ import matplotlib.pyplot as plt
 import os
 import sys
 import numpy as np
-import cv2
+
+opencv = False
+if opencv: 
+    import cv2
 
 np.random.seed(0)
 
@@ -17,8 +20,8 @@ validating_ratio = 0.14  # use 15% for validation
 
 #455, 373
 
-img_width = 455 // 2
-img_height = 373 // 2
+img_width = 496
+img_height = 163
 
 positives = []
 negatives = []
@@ -26,16 +29,19 @@ negatives = []
 s_img = None
 
 def read_samples(from_dir, int_arr, label):
-    print("HELEO")
     for sample in os.listdir(from_dir):
         if not sample.endswith("png"): continue
         print("\rReading: " + from_dir + sample, end="")
-        img = cv2.imread(from_dir + sample, cv2.IMREAD_UNCHANGED)
-        img = cv2.resize(img, dsize=(img_width, img_height), interpolation=cv2.INTER_CUBIC)
-        img = img[:, :, 0]
+        if opencv:
+            img = cv2.imread(from_dir + sample, cv2.IMREAD_UNCHANGED)
+            img = cv2.resize(img, dsize=(img_width, img_height), interpolation=cv2.INTER_CUBIC)
+            img = img[:, :, 0]
 
-        img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-        s_img = img
+            img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+            s_img = img
+        else:
+            img = plt.imread(from_dir + sample)
+            img = img[:, :, 0]
 
         img = np.expand_dims(img, -1)
         int_arr.append(np.array([img, label]))

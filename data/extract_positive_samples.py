@@ -6,6 +6,42 @@ import io
 import os
 import sys
 from PIL import Image
+import matplotlib.cm as cm
+from scipy import signal
+from scipy.io import wavfile
+import matplotlib.colors as colors
+import matplotlib.cbook as cbook
+
+debug = False
+
+# Takes a 2 second raw clapping .wav and converts it to numpy frames
+def wav2sample(sample_file, dest_file): 
+    try: 
+        sample_rate, samples = wavfile.read(sample_file)
+    except: 
+        print("Failed to read: " + sample_file)
+        return 
+
+    frequencies, times, X = signal.spectrogram(samples, sample_rate, scaling="spectrum")
+
+    plt.clf()
+    plt.imshow(X, cmap="gray", norm=colors.LogNorm(vmin=X.min(), vmax=X.max()),)
+
+    plt.axis("off")
+
+    buf = io.BytesIO()
+    plt.savefig(buf, bbox_inches='tight')
+    buf.seek(0)
+    img = Image.open(buf)
+    w, h = img.size
+    img = img.crop((10, 9, w - 9, h - 10))
+    buf.close()
+
+    print("Hellow Wrote " + dest_file)
+    if debug:
+        img.show()
+    else: 
+        img.save(dest_file)
 
 # Takes a 2 second raw clapping .wav and converts it to numpy frames
 def extract_positive_sample(p, sample_file): 
@@ -69,11 +105,12 @@ if __name__ == "__main__":
 
     files = os.listdir("positives-raw")
     num = 0
+#    files = files[0:5]
     for sample in files: 
         num += 1
         dest = "positives/sample-" + str(num) + ".png"
-        recording = extract_positive_sample(p, "positives-raw/" + sample)
-        convert_sample(recording, dest)
+        recording = wav2sample("positives-raw/" + sample, dest)
+        #convert_sample(recording, dest)
         print("\rWrote " + dest, end="")
 
     p.terminate()

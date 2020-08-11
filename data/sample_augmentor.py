@@ -1,9 +1,12 @@
 from pydub import AudioSegment
 import pyaudio
+from pympler.tracker import SummaryTracker
+import gc
 from pydub.playback import play 
+import pympler
 import io
 from extract_negative_samples import extract_negative_samples
-from extract_positive_samples import extract_positive_sample, convert_sample
+from extract_positive_samples import extract_positive_sample, convert_sample, wav2sample
 import wave
 import numpy as np
 import os
@@ -56,6 +59,7 @@ def save_to_buf(buf, recording):
     buf.seek(0)
 
 for i in range(len(raw_neg_samples)):
+    #tracker = SummaryTracker()
     if mixPositivesWithNegatives:
         j = np.random.randint(0, len(raw_pos_samples))
         raw_pos = raw_pos_samples[j]
@@ -68,8 +72,12 @@ for i in range(len(raw_neg_samples)):
     pos_buf = io.BytesIO()
     neg_buf = io.BytesIO()
 
-    save_to_buf(pos_buf, raw_pos)
-    save_to_buf(neg_buf, raw_neg)
+    try: 
+        save_to_buf(pos_buf, raw_pos)
+        save_to_buf(neg_buf, raw_neg)
+    except:
+        print("Failed to write to buffer")
+        continue
 
     track1 = AudioSegment.from_file(pos_buf)
     track2 = AudioSegment.from_file(neg_buf)
@@ -82,15 +90,27 @@ for i in range(len(raw_neg_samples)):
         fname = "negatives/gen-" + str(i) + ".png"
 
     print ("Generated recording " + fname + "\r", end="")
-    res_buf = io.BytesIO()
-    combined.export(res_buf, format='wav')
-    res_buf.seek(0)
+    res_buf = open("/tmp/sample.wav", "wb")
+    res = combined.export(res_buf, format='wav')
+    res.close()
+
+    del combined
+    del track1
+    del track2
+
+    res_buf.close()
+    pos_buf.close()    
+    neg_buf.close()
 
     #song = AudioSegment.from_wav(res_buf)
     #play(song)
     #res_buf.seek(0)
     
-    recording = extract_positive_sample(p, res_buf)
-    convert_sample(recording, fname, debug=False)
+    wav2sample("/tmp/sample.wav", fname)
+    #recording = extract_positive_sample(p, res_buf)
+    #convert_sample(recording, fname, debug=False)
+
+    gc.collect()
+    #tracker.print_diff()
 
 p.terminate()
